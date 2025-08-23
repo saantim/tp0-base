@@ -25,7 +25,7 @@ networks:
         - subnet: 172.25.125.0/24
 """
 
-CLIENT = f"""
+CLIENT = """
   client{0}:
     container_name: client{0}
     image: client:latest
