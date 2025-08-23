@@ -12,7 +12,6 @@ SERVER = """
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
     volumes:
@@ -36,7 +35,6 @@ CLIENT = """
     entrypoint: /client
     environment:
       - CLI_ID={0}
-      - CLI_LOG_LEVEL=DEBUG
     networks:
       - testing_net
     depends_on:
