@@ -3,6 +3,9 @@ import sys
 HEADER = """
 name: tp0
 services:
+"""
+
+SERVER = """
   server:
     container_name: server
     image: server:latest
@@ -16,7 +19,6 @@ services:
 """
 
 NETWORK = """
-
 networks:
   testing_net:
     ipam:
@@ -37,7 +39,8 @@ CLIENT = """
       - testing_net
     depends_on:
       - server
-        """
+"""
+
 def parse_args(args):
     if len(args) != 2:
         print("Error: wrong quantity of arguments")
@@ -60,9 +63,8 @@ def main():
     args = sys.argv[1:]
     path, quantity = parse_args(args)
 
-
     with open(path, "w") as f:
-        script = HEADER
+        script = HEADER + SERVER
         for i in range(1, quantity + 1):
             script += CLIENT.format(i)
         script += NETWORK
