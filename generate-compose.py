@@ -63,7 +63,7 @@ def main():
 
     with open(path, "w") as f:
         script = HEADER
-        for i in range(0, quantity):
+        for i in range(1, quantity + 1):
             script += CLIENT.format(i)
         script += NETWORK
         f.write(script)
