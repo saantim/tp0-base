@@ -15,6 +15,8 @@ SERVER = """
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/config.ini
 
 """
 
@@ -39,6 +41,8 @@ CLIENT = """
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 """
 
 def parse_args(args):
