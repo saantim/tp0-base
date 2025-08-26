@@ -61,9 +61,10 @@ func (c *Client) StartClientLoop() {
 	signal.Notify(sigChannel, syscall.SIGTERM)
 
 	go func() {
-		log.Infof("action: graceful_shutdown | result: in_progress")
+		_ = <-sigChannel
+		log.Infof("Sigterm received - Starting gracefully shut down")
 		c.conn.Close()
-		log.Infof("action: graceful_shutdown | result: Sucessful")
+		log.Infof("Gracefully shutdown done!")
 		os.Exit(0)
 	}()
 
