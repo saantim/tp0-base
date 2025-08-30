@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -62,13 +63,14 @@ func (c *Client) StartClientLoop() {
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
-
+		bet := buildBetFromEnv()
 		// TODO: Modify the send to avoid short-write
 		fmt.Fprintf(
 			c.conn,
-			"[CLIENT %v] Message N°%v\n",
+			"[CLIENT %v] Message N°%v, %v \n",
 			c.config.ID,
 			msgID,
+			bet,
 		)
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
@@ -91,6 +93,22 @@ func (c *Client) StartClientLoop() {
 
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func buildBetFromEnv() Bet {
+	name := os.Getenv("NOMBRE")
+	lastName := os.Getenv("APELLIDO")
+	id, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
+	birthDate := os.Getenv("NACIMIENTO")
+	number, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
+
+	return Bet{
+		Name:     name,
+		LastName: lastName,
+		ID:       uint8(id),
+		BirthDay: birthDate,
+		BetNum:   uint32(number),
+	}
 }
 
 func handleSigterm(c *Client) {
