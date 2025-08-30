@@ -57,16 +57,7 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, syscall.SIGTERM)
-
-	go func() {
-		_ = <-sigChannel
-		log.Infof("Sigterm received - Starting gracefully shut down")
-		c.conn.Close()
-		log.Infof("Gracefully shutdown done!")
-		os.Exit(0)
-	}()
+	handleSigterm(c)
 
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
@@ -100,4 +91,17 @@ func (c *Client) StartClientLoop() {
 
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func handleSigterm(c *Client) {
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGTERM)
+
+	go func() {
+		_ = <-sigChannel
+		log.Infof("Sigterm received - Starting gracefully shut down")
+		c.conn.Close()
+		log.Infof("Gracefully shutdown done!")
+		os.Exit(0)
+	}()
 }
