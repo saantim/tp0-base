@@ -65,6 +65,9 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 		bet := buildBetFromEnv()
 		// TODO: Modify the send to avoid short-write
+		send := bet.ToBytes()
+		c.conn.Write(send)
+
 		fmt.Fprintf(
 			c.conn,
 			"[CLIENT %v] Message N°%v, %v \n",
@@ -101,13 +104,13 @@ func buildBetFromEnv() Bet {
 	log.Infof("name %s, last name %s", name, lastName)
 	id, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
 	birthDate := os.Getenv("NACIMIENTO")
-	number, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
+	number, _ := strconv.Atoi(os.Getenv("NUMERO"))
 	log.Infof("name %v, last name %v, id %v, nacimiento %v, number %v", name,
 		lastName, id, birthDate, number)
 	return Bet{
 		Name:     name,
 		LastName: lastName,
-		ID:       uint8(id),
+		ID:       uint32(id),
 		BirthDay: birthDate,
 		BetNum:   uint32(number),
 	}
