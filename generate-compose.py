@@ -35,6 +35,11 @@ CLIENT = """
     entrypoint: /client
     environment:
       - CLI_ID={0}
+      - NOMBRE=Pepito
+      - APELLIDO=Gomez
+      - DOCUMENTO=12345678
+      - NACIMIENTO=1990-01-01
+      - NUMERO=7574
     networks:
       - testing_net
     depends_on:
