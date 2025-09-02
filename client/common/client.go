@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/messages"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
 	"github.com/op/go-logging"
 )
 
@@ -56,58 +58,39 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
+	c.createClientSocket()
+	defer c.conn.Close()
 	handleSigterm(c)
 
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
-		bet := buildBetFromEnv()
-		// TODO: Modify the send to avoid short-write
-		send := bet.ToBytes()
-		c.conn.Write(send)
+	bet := buildBetFromEnvVars()
+	betMsg := messages.BetMsg{Bet: bet}
+	err := writeAll(c.conn, betMsg.ToBytes())
 
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v, %v \n",
-			c.config.ID,
-			msgID,
-			bet,
-		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
-		}
-
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
-
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
-
+	if err != nil {
+		log.Errorf("There was an error sending a message")
+		return
 	}
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+
+	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
+
+	ack := messages.BuildAckMsg(msg)
+	if ack.SuccessResult() && err == nil {
+		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			bet.ID,
+			bet.BetNum,
+		)
+	}
 }
 
-func buildBetFromEnv() Bet {
+func buildBetFromEnvVars() model.Bet {
+	agency, _ := strconv.Atoi("CLI_ID")
 	name := os.Getenv("NOMBRE")
 	lastName := os.Getenv("APELLIDO")
-	log.Infof("name %s, last name %s", name, lastName)
 	id, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
 	birthDate := os.Getenv("NACIMIENTO")
 	number, _ := strconv.Atoi(os.Getenv("NUMERO"))
-	log.Infof("name %v, last name %v, id %v, nacimiento %v, number %v", name,
-		lastName, id, birthDate, number)
-	return Bet{
+	return model.Bet{
+		Agency:   uint8(agency),
 		Name:     name,
 		LastName: lastName,
 		ID:       uint32(id),
@@ -127,4 +110,31 @@ func handleSigterm(c *Client) {
 		log.Infof("Gracefully shutdown done!")
 		os.Exit(0)
 	}()
+}
+
+func writeAll(conn net.Conn, data []byte) error {
+	totalWritten := 0
+	for totalWritten < len(data) {
+		n, err := conn.Write(data[totalWritten:])
+		if err != nil {
+			return fmt.Errorf("error writing to connection: %v", err)
+		}
+		totalWritten += n
+	}
+	return nil
+}
+
+func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	read := 0
+
+	for read < n {
+		count, err := reader.Read(buf[read:])
+		if err != nil {
+			return nil, err
+		}
+		read += count
+	}
+
+	return buf, nil
 }

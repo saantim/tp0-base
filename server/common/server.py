@@ -2,7 +2,8 @@ import socket
 import logging
 import signal
 import sys
-
+from .messages import MessageParser, AckMsg
+from . import utils
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
@@ -45,12 +46,17 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
+            bet = recv_bet(client_sock)
+            if not bet:
+                logging.error("action: receive_message | result: fail | error: invalid_bet_data")
+                return
+
+            utils.store_bets([bet])
+            logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}")
+
+            response = AckMsg(True)
+            client_sock.sendall(response.to_bytes())
+
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
@@ -69,3 +75,12 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
+
+def recv_bet(client_sock):
+    msg = client_sock.recv(84, socket.MSG_WAITALL)
+    if len(msg) != 84:
+        logging.error(
+            f'action: receive_message | result: fail | error: incomplete_message | received: {len(msg)} bytes')
+        return None
+
+    return MessageParser(msg).parse()

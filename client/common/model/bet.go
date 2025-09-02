@@ -1,8 +1,9 @@
-package common
+package model
 
 import "encoding/binary"
 
 type Bet struct {
+	Agency   uint8
 	ID       uint32
 	Name     string
 	LastName string
@@ -11,17 +12,21 @@ type Bet struct {
 }
 
 const (
+	AgencyLen     = 1
 	idLen         = 4
 	nameLen       = 32
 	lastNameLen   = 32
 	birthDayLen   = 10
 	betNumLen     = 4
-	totalFixedLen = idLen + nameLen + lastNameLen + birthDayLen + betNumLen
+	TotalFixedLen = AgencyLen + idLen + nameLen + lastNameLen + birthDayLen + betNumLen
 )
 
 func (b *Bet) ToBytes() []byte {
-	buf := make([]byte, totalFixedLen)
+	buf := make([]byte, TotalFixedLen)
 	i := 0
+
+	buf[i] = b.Agency
+	i += AgencyLen
 
 	binary.BigEndian.PutUint32(buf[i:i+idLen], b.ID)
 	i += idLen
