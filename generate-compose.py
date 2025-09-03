@@ -46,6 +46,7 @@ CLIENT = """
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data:/data
 """
 
 def parse_args(args):

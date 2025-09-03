@@ -1,16 +1,18 @@
+
 name: tp0
 services:
+
   server:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
     volumes:
       - ./server/config.ini:/config.ini
+
 
   client1:
     container_name: client1
@@ -18,7 +20,6 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - CLI_LOG_LEVEL=DEBUG
       - NOMBRE=Pepito
       - APELLIDO=Gomez
       - DOCUMENTO=12345678
@@ -30,6 +31,7 @@ services:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data:/data
 
 networks:
   testing_net:

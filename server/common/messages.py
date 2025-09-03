@@ -3,7 +3,8 @@ from . import utils
 class MessageParser:
     BET_MSG_TYPE = 1
     ACK_MSG_TYPE = 2
-    HEADER_SIZE = 1
+    BET_BATCH_MSG_TYPE = 3
+    HEADER_SIZE = 2
 
     def __init__(self, header: bytes, data: bytes):
         self.header = header
@@ -26,14 +27,22 @@ class MessageParser:
         return string_bytes.decode('utf-8').rstrip('\x00')
 
     def parse(self):
-        if self.header[0] == MessageParser.BET_MSG_TYPE:
-            return BetParser(self.header, self.data, self.offset).parse_bet()
+        msg_type = self.header[0]
+        if msg_type == MessageParser.BET_MSG_TYPE:
+            return [BetParser(self.header, self.data, self.offset).parse()]
+        if msg_type == MessageParser.BET_BATCH_MSG_TYPE:
+            return BetBatchParser(self.header, self.data, self.offset).parse()
+
         raise ValueError("Invalid message type")
 
     @classmethod
     def expected_bytes(cls, header: bytes) -> int:
-        if header[0] == MessageParser.BET_MSG_TYPE:
+        msg_type = header[0]
+        if msg_type == MessageParser.BET_MSG_TYPE:
             return BetParser.PAYLOAD_SIZE
+        if msg_type == MessageParser.BET_BATCH_MSG_TYPE:
+            required_bytes = BetParser.PAYLOAD_SIZE * header[1]
+            return required_bytes
         return 0
 
 class BetParser(MessageParser):
@@ -45,7 +54,7 @@ class BetParser(MessageParser):
         super().__init__(header, data)
         self.offset = offset
 
-    def parse_bet(self) -> utils.Bet:
+    def parse(self) -> utils.Bet:
         agency=self.read_uint8()
         bet_id=self.read_uint32()
         first_name=self.read_string(self.NAME_LENGTH)
@@ -62,6 +71,20 @@ class BetParser(MessageParser):
             str(bet_num)
         )
 
+class BetBatchParser(MessageParser):
+
+    def __init__(self, header: bytes, data: bytes, offset: int = 0):
+        super().__init__(header, data)
+        self.offset = offset
+        self.batch_size = header[1]
+
+    def parse(self) -> list[utils.Bet]:
+        bets = []
+        for _ in range(self.batch_size):
+            bet_parser = BetParser(self.header, self.data, self.offset)
+            bets.append(bet_parser.parse())
+            self.offset = bet_parser.offset
+        return bets
 
 class AckMsg:
 
@@ -69,4 +92,4 @@ class AckMsg:
         self.success = success
 
     def to_bytes(self) -> bytes:
-        return bytes([MessageParser.ACK_MSG_TYPE, int(self.success)])
+        return bytes([MessageParser.ACK_MSG_TYPE, 0, int(self.success)])

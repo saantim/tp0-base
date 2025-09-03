@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,10 +20,11 @@ var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	MaxBatchAmount int
 }
 
 // Client Entity that encapsulates how
@@ -62,24 +64,84 @@ func (c *Client) StartClientLoop() {
 	defer c.conn.Close()
 	handleSigterm(c)
 
-	bet := buildBetFromEnvVars()
-	betMsg := messages.BetMsg{Bet: bet}
-	err := writeAll(c.conn, betMsg.ToBytes())
-
+	filename := fmt.Sprintf("/data/agency-%v.csv", c.config.ID)
+	file, err := os.Open(filename)
 	if err != nil {
-		log.Errorf("There was an error sending a message")
+		log.Errorf("There was an error opening file agency-%v", c.config.ID)
 		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var bets []model.Bet
+	error_sending := false
+	for scanner.Scan() {
+		bet, _ := parse_csv_line(scanner, c.config)
+		bets = append(bets, bet)
+
+		if len(bets) >= c.config.MaxBatchAmount {
+			if err := c.sendBatch(bets); err != nil {
+				log.Errorf("Error sending batch: %v", err)
+				return
+			}
+			bets = []model.Bet{}
+
+			msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
+			ack := messages.BuildAckMsg(msg)
+			if !ack.SuccessResult() || err != nil {
+				error_sending = true
+			}
+		}
+
+		time.Sleep(c.config.LoopPeriod)
+	}
+	if len(bets) > 0 {
+		if err := c.sendBatch(bets); err != nil {
+			error_sending = true
+		}
 	}
 
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 
 	ack := messages.BuildAckMsg(msg)
-	if ack.SuccessResult() && err == nil {
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			bet.ID,
-			bet.BetNum,
-		)
+	if !ack.SuccessResult() || err != nil {
+		error_sending = true
 	}
+	if error_sending {
+		log.Errorf("action: sending_batch | result: fail | error")
+	}
+}
+
+func parse_csv_line(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
+	line := strings.TrimSpace(scanner.Text())
+	if line == "" {
+		return model.Bet{}, fmt.Errorf("EmptyLine")
+	}
+	fields := strings.Split(line, ",")
+	if len(fields) < 5 {
+		return model.Bet{}, fmt.Errorf("line with wrong format")
+	}
+
+	// Parsear ID
+	id, err := strconv.Atoi(strings.TrimSpace(fields[2]))
+	if err != nil {
+		return model.Bet{}, fmt.Errorf("line with wrong id")
+	}
+
+	betNum, err := strconv.Atoi(strings.TrimSpace(fields[4]))
+	if err != nil {
+		return model.Bet{}, fmt.Errorf("line with wrong bet number")
+	}
+
+	agencyId, _ := strconv.Atoi(config.ID)
+	return model.Bet{
+		Agency:   uint8(agencyId),
+		ID:       uint32(id),
+		Name:     strings.TrimSpace(fields[0]),
+		LastName: strings.TrimSpace(fields[1]),
+		BirthDay: strings.TrimSpace(fields[3]),
+		BetNum:   uint32(betNum),
+	}, nil
 }
 
 func buildBetFromEnvVars() model.Bet {
@@ -117,6 +179,7 @@ func writeAll(conn net.Conn, data []byte) error {
 	for totalWritten < len(data) {
 		n, err := conn.Write(data[totalWritten:])
 		if err != nil {
+			log.Errorf("There was an error trying to write to server %v", err)
 			return fmt.Errorf("error writing to connection: %v", err)
 		}
 		totalWritten += n
@@ -137,4 +200,12 @@ func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+func (c *Client) sendBatch(bets []model.Bet) error {
+	betBatch := messages.BetBatchMsg{Bets: bets}
+	if err := writeAll(c.conn, betBatch.ToBytes()); err != nil {
+		return fmt.Errorf("error sending batch: %v", err)
+	}
+	return nil
 }

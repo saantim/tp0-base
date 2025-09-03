@@ -46,20 +46,31 @@ class Server:
         client socket will also be closed
         """
         try:
-            bet = recv_bet(client_sock)
-            if not bet:
-                logging.error("action: receive_message | result: fail | error: invalid_bet_data")
-                return
+            recv_bets = 0
+            error_occurred = False
+            while True:
+                bets, error = recv_bet(client_sock)
+                if error: error_occurred = True
+                if not bets:
+                    break
 
-            utils.store_bets([bet])
-            logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}")
+                recv_bets += len(bets)
+                utils.store_bets(bets)
 
-            response = AckMsg(True)
-            client_sock.sendall(response.to_bytes())
+                response = AckMsg(True)
+                client_sock.sendall(response.to_bytes())
+
+            if error_occurred:
+                logging.info(f"action: apuesta_recibida | result: fail | cantidad: ${recv_bets}")
+                return 1
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
+            return 0
 
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
+            return 1
         finally:
+            logging.info(f"Closing client socket {client_sock.getpeername()}")
             client_sock.close()
 
     def __accept_new_connection(self):
@@ -79,14 +90,10 @@ class Server:
 def recv_bet(client_sock):
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
     if not header:
-        logging.error("action: receive_message | result: fail | error: no_header")
-        return None
+        return None, False
     to_read = MessageParser.expected_bytes(header)
 
     msg = client_sock.recv(to_read, socket.MSG_WAITALL)
     if len(msg) != to_read:
-        logging.error(
-            f'action: receive_message | result: fail | error: incomplete_message | received: {len(msg)} bytes')
-        return None
-
-    return MessageParser(header, msg).parse()
+        return None, True
+    return MessageParser(header, msg).parse(), False

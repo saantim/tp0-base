@@ -1,19 +1,24 @@
 package messages
 
+import "github.com/op/go-logging"
+
 type Message interface {
 	GetType()
 	PayloadLen()
 }
 type MsgType uint8
 
-const (
-	HeaderLen = 1
+var log = logging.MustGetLogger("log")
 
-	BetMsgType MsgType = 1
-	AckMsgType MsgType = 2
+const (
+	HeaderLen = 2
+
+	BetMsgType      MsgType = 1
+	AckMsgType      MsgType = 2
+	BetBatchMsgType MsgType = 3
 )
 
 func BuildAckMsg(msg []byte) AckMsg {
-	result := msg[1] == 1
+	result := msg[2] == 1
 	return AckMsg{result: result}
 }
