@@ -25,7 +25,7 @@ class MessageParser:
         return string_bytes.decode('utf-8').rstrip('\x00')
 
     def parse(self):
-        if self.read_uint8() == BET_MSG_TYPE:
+        if self.read_uint8() == BetParser.BET_MSG_TYPE:
             return BetParser(self.data, self.offset).parse_bet()
         raise ValueError("Invalid message type")
 

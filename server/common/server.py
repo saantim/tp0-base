@@ -89,4 +89,4 @@ def recv_bet(client_sock):
             f'action: receive_message | result: fail | error: incomplete_message | received: {len(msg)} bytes')
         return None
 
-    return MessageParser(msg).parse()
+    return MessageParser(header + msg).parse()
