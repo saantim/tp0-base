@@ -83,7 +83,7 @@ func (c *Client) StartClientLoop() {
 }
 
 func buildBetFromEnvVars() model.Bet {
-	agency, _ := strconv.Atoi("CLI_ID")
+	agency, _ := strconv.Atoi(os.Getenv("CLI_ID"))
 	name := os.Getenv("NOMBRE")
 	lastName := os.Getenv("APELLIDO")
 	id, _ := strconv.Atoi(os.Getenv("DOCUMENTO"))
