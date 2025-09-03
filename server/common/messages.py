@@ -25,13 +25,13 @@ class MessageParser:
         return string_bytes.decode('utf-8').rstrip('\x00')
 
     def parse(self):
-        if self.read_uint8() == BetParser.BET_MSG_TYPE:
+        if self.read_uint8() == MessageParser.BET_MSG_TYPE:
             return BetParser(self.data, self.offset).parse_bet()
         raise ValueError("Invalid message type")
 
     @classmethod
-    def expected_bytes(self, header: bytes) -> int:
-        if header[0] == self.BET_MSG_TYPE:
+    def expected_bytes(cls, header: bytes) -> int:
+        if header[0] == MessageParser.BET_MSG_TYPE:
             return BetParser.PAYLOAD_SIZE
         return 0
 
@@ -68,4 +68,4 @@ class AckMsg:
         self.success = success
 
     def to_bytes(self) -> bytes:
-        return bytes([ACK_MSG_TYPE, int(self.success)])
+        return bytes([MessageParser.ACK_MSG_TYPE, int(self.success)])
