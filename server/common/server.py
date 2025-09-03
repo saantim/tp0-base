@@ -77,8 +77,14 @@ class Server:
         return c
 
 def recv_bet(client_sock):
-    msg = client_sock.recv(84, socket.MSG_WAITALL)
-    if len(msg) != 84:
+    header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
+    if not header:
+        logging.error("action: receive_message | result: fail | error: no_header")
+        return None
+    to_read = MessageParser.expected_bytes(header)
+
+    msg = client_sock.recv(to_read, socket.MSG_WAITALL)
+    if len(msg) != to_read:
         logging.error(
             f'action: receive_message | result: fail | error: incomplete_message | received: {len(msg)} bytes')
         return None

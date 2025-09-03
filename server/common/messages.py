@@ -1,9 +1,9 @@
 from . import utils
 
-BET_MSG_TYPE = 1
-ACK_MSG_TYPE = 2
-
 class MessageParser:
+    BET_MSG_TYPE = 1
+    ACK_MSG_TYPE = 2
+    HEADER_SIZE = 1
 
     def __init__(self, data: bytes):
         self.data = data
@@ -29,9 +29,16 @@ class MessageParser:
             return BetParser(self.data, self.offset).parse_bet()
         raise ValueError("Invalid message type")
 
+    @classmethod
+    def expected_bytes(self, header: bytes) -> int:
+        if header[0] == self.BET_MSG_TYPE:
+            return BetParser.PAYLOAD_SIZE
+        return 0
+
 class BetParser(MessageParser):
     NAME_LENGTH = 32
     BIRTH_DAY_LENGTH = 10
+    PAYLOAD_SIZE = 83
 
     def __init__(self, data: bytes, offset: int = 0):
         super().__init__(data)
