@@ -5,7 +5,8 @@ class MessageParser:
     ACK_MSG_TYPE = 2
     HEADER_SIZE = 1
 
-    def __init__(self, data: bytes):
+    def __init__(self, header: bytes, data: bytes):
+        self.header = header
         self.data = data
         self.offset = 0
 
@@ -25,8 +26,8 @@ class MessageParser:
         return string_bytes.decode('utf-8').rstrip('\x00')
 
     def parse(self):
-        if self.read_uint8() == MessageParser.BET_MSG_TYPE:
-            return BetParser(self.data, self.offset).parse_bet()
+        if self.header[0] == MessageParser.BET_MSG_TYPE:
+            return BetParser(self.header, self.data, self.offset).parse_bet()
         raise ValueError("Invalid message type")
 
     @classmethod
@@ -40,8 +41,8 @@ class BetParser(MessageParser):
     BIRTH_DAY_LENGTH = 10
     PAYLOAD_SIZE = 83
 
-    def __init__(self, data: bytes, offset: int = 0):
-        super().__init__(data)
+    def __init__(self, header: bytes, data: bytes, offset: int = 0):
+        super().__init__(header, data)
         self.offset = offset
 
     def parse_bet(self) -> utils.Bet:
