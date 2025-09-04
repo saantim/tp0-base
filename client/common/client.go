@@ -106,9 +106,7 @@ func (c *Client) StartClient() {
 		log.Errorf("action: sending_batch | result: fail | error")
 	}
 
-	log.Infof("MANDANDO SEND BATCH FINISHED")
 	sendBatchFinished(c)
-	log.Infof("MANDANDO ASK WINNERS")
 	winners, _ := askWinners(c)
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 }
@@ -161,13 +159,11 @@ func sendBatchFinished(c *Client) error {
 }
 
 func waitAck(c *Client) error {
-	log.Infof("ESPErANDO ACK")
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 	ack := messages.BuildAckMsg(msg)
 	if !ack.SuccessResult() || err != nil {
 		return err
 	}
-	log.Infof("ACK RECIBIDO!")
 	return nil
 }
 

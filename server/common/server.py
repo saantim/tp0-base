@@ -71,27 +71,23 @@ class Server:
                     client_sock.sendall(response.to_bytes())
 
                 if msg.is_finish_batch_msg():
-                    logging.info(f"action: finish_batch | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}")
                     self.received_agencies += 1
-                    logging.info(f"Agencias registradas {self.received_agencies}, Total esperado: {self._quantity_agencies}")
                     if self.received_agencies == self._quantity_agencies:
+                        logging.info("action: sorteo | result: success")
                         self.process_bets()
                         self.winners_processed = True
                     response = AckMsg(True)
                     client_sock.sendall(response.to_bytes())
 
                 if msg.is_ask_winners_msg():
-                    logging.info(f"action: ask_winners | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}, Winners processed: {self.winners_processed}")
                     if self.winners_processed:
                         agency_id = msg.get_parser().get_agency_id()
                         winners = self.winners.get(agency_id)
                         if not winners:
                             winners = []
                         winners_msg = WinnersMsg(winners)
-                        logging.info("SENDING WINNERS!")
                         client_sock.sendall(winners_msg.to_bytes())
                     else:
-                        logging.info("SENDING ACK NO WINNERS!")
                         response = AckMsg(True)
                         client_sock.sendall(response.to_bytes())
 
