@@ -4,6 +4,7 @@ import signal
 import sys
 from .messages import MessageParser, AckMsg, WinnersMsg
 import threading
+from threading import Condition
 
 from . import utils
 class Server:
@@ -17,6 +18,7 @@ class Server:
         self.winners_processed = False
         self.winners = {}
         self.lock = threading.RLock()
+        self.winners_condition = Condition(self.lock)
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
@@ -97,16 +99,13 @@ class Server:
 
     def handle_get_winners(self, client_sock, msg):
         with self.lock:
-            if self.winners_processed:
-                agency_id = msg.get_parser().get_agency_id()
-                winners = self.winners.get(agency_id)
-                if not winners:
-                    winners = []
-                winners_msg = WinnersMsg(winners)
-                client_sock.sendall(winners_msg.to_bytes())
-            else:
-                response = AckMsg(True)
-                client_sock.sendall(response.to_bytes())
+            while not self.winners_processed:
+                self.winners_condition.wait()
+                
+            agency_id = msg.get_parser().get_agency_id()
+            winners = self.winners.get(agency_id, [])
+            winners_msg = WinnersMsg(winners)
+            client_sock.sendall(winners_msg.to_bytes())
 
     def handle_finished_batch(self, client_sock, recv_bets):
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
@@ -116,6 +115,7 @@ class Server:
                 logging.info("action: sorteo | result: success")
                 self.process_bets()
                 self.winners_processed = True
+                self.winners_condition.notify_all()
         response = AckMsg(True)
         client_sock.sendall(response.to_bytes())
 
