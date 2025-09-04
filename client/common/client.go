@@ -95,12 +95,11 @@ func (c *Client) StartClient() {
 		if err := c.sendBatch(bets); err != nil {
 			errorSending = true
 		}
+		err = waitAck(c)
 	}
 	log.Infof("Finished sending batch to %v", c.config.ID)
-	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 
-	ack := messages.BuildAckMsg(msg)
-	if !ack.SuccessResult() || err != nil {
+	if err != nil {
 		errorSending = true
 	}
 	if errorSending {
