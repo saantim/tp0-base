@@ -14,13 +14,16 @@ class Server:
         self.received_agencies = 0
         self.winners_processed = False
         self.winners = {}
-
+        self.running = True
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
-        self._server_socket.close()
+        try:
+            self._server_socket.close()
+        except Exception:
+            pass
         logging.info("action: graceful_shutdown | result: success")
-        sys.exit(0)
+        self.running = False
 
     def run(self):
         """
@@ -35,9 +38,10 @@ class Server:
         # the server
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         try:
-            while True:
+            while self.running:
                 client_sock = self.__accept_new_connection()
-                self.__handle_client_connection(client_sock)
+                if client_sock:
+                    self.__handle_client_connection(client_sock)
         except KeyboardInterrupt:
             logging.info("action: graceful_shutdown | result: in_progress")
             self._server_socket.close()
@@ -120,9 +124,13 @@ class Server:
         """
 
         # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+        try:
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+        except OSError as e:
+            if not self.running:
+                return None
         return c
 
     def process_bets(self):
