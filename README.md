@@ -90,6 +90,12 @@ Se agregan nuevos mensajes:
   - **Header**: Tipo de mensaje 
   - **Payload**: Secuencia de nombres de los ganadores
   
+### Ejercicio N°8:
+- Se modificó el servidor para que permita aceptar conexiones y procesar mensajes de manera concurrente.
+- Se crea un nuevo hilo por cada cliente que se conecta, permitiendo múltiples conexiones simultáneas.
+- Se hizo uso de distintas herramientas de sincronización asi como: Locks, Events y Conditions para el adacuado manejo de los recursos compartidos, y para mantener un comportamiento concurrente de manera correcta en el servidor.
+- Por otra parte tambien se mejoró el manejo de errores y la forma en que se manejan las señales de interrupción.
+
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

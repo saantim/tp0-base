@@ -24,7 +24,11 @@ class Server:
 
     def handle_sigterm(self, signum, frame):
         """Handle SIGTERM signal for graceful shutdown.
-            modify the running flag to False
+        
+        This method is called when a SIGTERM signal is received. It initiates
+        a graceful shutdown of the server by closing the server socket and
+        notifying all waiting threads.
+
         """
         logging.info("action: graceful_shutdown | result: in_progress")
         try:
@@ -36,11 +40,13 @@ class Server:
         self.threads_running.set()
 
     def run(self):
-        """
-        Main server loop that accepts and handles client connections.
-
-        Listens for new connections and processes each client in sequence.
-        Handles SIGTERM and KeyboardInterrupt for graceful shutdown.
+        """Run the main server loop.
+        
+        Listens for new client connections and spawns a new thread for each one.
+        Handles both SIGTERM and KeyboardInterrupt for graceful shutdown.
+        
+        The server will continue running until a shutdown signal is received or
+        a keyboard interrupt occurs.
         """
 
         # TODO: Modify this program to handle signal to graceful shutdown
@@ -59,9 +65,17 @@ class Server:
             logging.info("action: graceful_shutdown | result: success")
 
     def __handle_client_connection(self, client_sock):
-        """
-        Handle client connection: receive bets and send acknowledgments.
-        The client socket is always closed after processing, regardless of success or failure.
+        """Handle client connection and process incoming messages.
+        
+        Continuously receives and processes messages from the client until the
+        connection is closed or an error occurs. The client socket is always
+        closed after processing, regardless of success or failure.
+        
+        Args:
+            client_sock: The client socket to communicate with.
+            
+        Returns:
+            int: 0 if the connection was handled successfully, 1 if an error occurred.
         """
         try:
             recv_bets = 0
@@ -107,9 +121,13 @@ class Server:
         client_sock.sendall(response.to_bytes())
         return recv_bets
 
-    def handle_get_winners(self, client_sock, msg):        
-        """
-        Handle request for winners from a client.
+    def handle_get_winners(self, client_sock, msg):
+        """Handle a request for winners from a client.
+
+        Retrieves the list of winners for the client's agency and sends it back.
+        If the winners haven't been processed yet, this method will block until
+        they are available.
+
         """
         with self.lock:
             while not self.winners_processed:
@@ -120,7 +138,15 @@ class Server:
             client_sock.sendall(winners_msg.to_bytes())
 
     def handle_finished_batch(self, client_sock, recv_bets):
-        """ Handle finished batch of bets from a client. """
+        """Handle notification that a client has finished sending bets.
+        
+        Updates the count of agencies that have finished sending bets. If all
+        agencies have finished, it triggers the winner determination process.
+        
+        Note:
+            This method is thread-safe and may notify waiting threads when all
+            agencies have reported in.
+        """
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
         with self.lock:
             self.received_agencies += 1
