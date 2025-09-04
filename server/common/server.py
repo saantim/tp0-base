@@ -13,6 +13,9 @@ class Server:
         self.running = True
 
     def handle_sigterm(self, signum, frame):
+        """Handle SIGTERM signal for graceful shutdown.
+            modify the running flag to False
+        """
         logging.info("action: graceful_shutdown | result: in_progress")
         try:
             self._server_socket.close()
@@ -23,11 +26,10 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
+        Main server loop that accepts and handles client connections.
 
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        Listens for new connections and processes each client in sequence.
+        Handles SIGTERM and KeyboardInterrupt for graceful shutdown.
         """
 
         # TODO: Modify this program to handle signal to graceful shutdown
@@ -45,10 +47,8 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Handle client connection: receive bets and send acknowledgments.
+        The client socket is always closed after processing, regardless of success or failure.
         """
         try:
             recv_bets = 0
@@ -84,6 +84,8 @@ class Server:
 
         Function blocks until a connection to a client is made.
         Then connection created is printed and returned
+
+        If the server is not running, returns None
         """
 
         # Connection arrived
@@ -97,6 +99,14 @@ class Server:
         return c
 
 def recv_bet(client_sock):
+    """Receive and parse a bet message from a client.
+    
+    Args:
+        client_sock: The client socket to receive data from.
+        
+    Returns:
+        Bet: The parsed bet message if successful, None otherwise.
+    """
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
     if not header:
         return None, False
