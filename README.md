@@ -22,6 +22,23 @@ El mismo basicamente es un wrapper que llama a un script de Python (`generate-co
 
 Haciendo uso de la configuración de volúmenes en Docker Compose se agregaron volumenes tanto en el servidor como el cliente para que puedan importar las configuraciones setedas en `config.ini` y `config.yaml` de manera dinamica.
 
+### Ejercicio N°3:
+
+Se implementó el script `validar-echo-server.sh` que verifica el funcionamiento del servidor usando `netcat` dentro de un contenedor temporal (`busybox`).
+Se realiza una conexión al servidor a través de la red de Docker, se envía un mensaje de prueba y luego se valida la respuesta
+Luego se imprime un mensaje de éxito o fallo según corresponda
+
+#### Ejemplo de uso:
+```
+./validar-echo-server.sh
+```
+#### Ejemplo de salida:
+```
+action: test_echo_server | result: success
+
+action: test_echo_server | result: fail
+```
+
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
