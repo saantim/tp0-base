@@ -118,7 +118,6 @@ func askWinners(c *Client) ([]string, error) {
 		if c.conn == nil {
 			c.createClientSocket()
 		}
-		c.conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 		agencyId, _ := strconv.Atoi(c.config.ID)
 		msgToSend := messages.AskWinnersMsg{Agency: uint8(agencyId)}
 		if err := writeAll(c.conn, msgToSend.ToBytes()); err != nil {
@@ -126,6 +125,10 @@ func askWinners(c *Client) ([]string, error) {
 		}
 		reader := bufio.NewReader(c.conn)
 		header, err := readExactBytes(reader, messages.HeaderLen)
+		if err != nil {
+			log.Infof("error reading header: %v", err)
+			continue
+		}
 		if messages.IsAckHeader(header) {
 			log.Debugf("ACK recibido, esperando...")
 			if c.conn != nil {
