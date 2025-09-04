@@ -3,6 +3,8 @@ import logging
 import signal
 import sys
 from .messages import MessageParser, AckMsg, WinnersMsg
+import threading
+
 from . import utils
 class Server:
     def __init__(self, port, listen_backlog, quantity_agencies):
@@ -14,7 +16,7 @@ class Server:
         self.received_agencies = 0
         self.winners_processed = False
         self.winners = {}
-
+        self.lock = threading.RLock()
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
@@ -37,7 +39,10 @@ class Server:
         try:
             while True:
                 client_sock = self.__accept_new_connection()
-                self.__handle_client_connection(client_sock)
+                threading.Thread(
+                    target=self.__handle_client_connection, args=(client_sock,)
+                ).start()
+                logging.debug(f"Threads: {threading.enumerate()}")
         except KeyboardInterrupt:
             logging.info("action: graceful_shutdown | result: in_progress")
             self._server_socket.close()
@@ -84,30 +89,33 @@ class Server:
         bets_parser = msg.get_parser()
         bets = bets_parser.parse()
         recv_bets += len(bets)
-        utils.store_bets(bets)
+        with self.lock:
+            utils.store_bets(bets)
         response = AckMsg(True)
         client_sock.sendall(response.to_bytes())
         return recv_bets
 
     def handle_get_winners(self, client_sock, msg):
-        if self.winners_processed:
-            agency_id = msg.get_parser().get_agency_id()
-            winners = self.winners.get(agency_id)
-            if not winners:
-                winners = []
-            winners_msg = WinnersMsg(winners)
-            client_sock.sendall(winners_msg.to_bytes())
-        else:
-            response = AckMsg(True)
-            client_sock.sendall(response.to_bytes())
+        with self.lock:
+            if self.winners_processed:
+                agency_id = msg.get_parser().get_agency_id()
+                winners = self.winners.get(agency_id)
+                if not winners:
+                    winners = []
+                winners_msg = WinnersMsg(winners)
+                client_sock.sendall(winners_msg.to_bytes())
+            else:
+                response = AckMsg(True)
+                client_sock.sendall(response.to_bytes())
 
     def handle_finished_batch(self, client_sock, recv_bets):
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
-        self.received_agencies += 1
-        if self.received_agencies == self._quantity_agencies:
-            logging.info("action: sorteo | result: success")
-            self.process_bets()
-            self.winners_processed = True
+        with self.lock:
+            self.received_agencies += 1
+            if self.received_agencies == self._quantity_agencies:
+                logging.info("action: sorteo | result: success")
+                self.process_bets()
+                self.winners_processed = True
         response = AckMsg(True)
         client_sock.sendall(response.to_bytes())
 
