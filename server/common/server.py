@@ -88,15 +88,15 @@ class Server:
                         if not winners:
                             winners = []
                         winners_msg = WinnersMsg(winners)
+                        logging.info("SENDING WINNERS!")
                         client_sock.sendall(winners_msg.to_bytes())
                     else:
+                        logging.info("SENDING ACK NO WINNERS!")
                         response = AckMsg(True)
                         client_sock.sendall(response.to_bytes())
 
             if error_occurred:
-                logging.info(f"action: apuesta_recibida | result: fail | cantidad: ${recv_bets}")
                 return 1
-            logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
             return 0
 
         except OSError as e:

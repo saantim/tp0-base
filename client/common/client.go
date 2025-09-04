@@ -118,6 +118,7 @@ func askWinners(c *Client) ([]string, error) {
 		if c.conn == nil {
 			c.createClientSocket()
 		}
+		c.conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 		agencyId, _ := strconv.Atoi(c.config.ID)
 		msgToSend := messages.AskWinnersMsg{Agency: uint8(agencyId)}
 		if err := writeAll(c.conn, msgToSend.ToBytes()); err != nil {
