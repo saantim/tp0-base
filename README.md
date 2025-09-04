@@ -18,6 +18,10 @@ El mismo basicamente es un wrapper que llama a un script de Python (`generate-co
 ./generar-compose.sh docker-compose-dev.yaml 5
 ```
 
+### Ejercicio N°2:
+
+Haciendo uso de la configuración de volúmenes en Docker Compose se agregaron volumenes tanto en el servidor como el cliente para que puedan importar las configuraciones setedas en `config.ini` y `config.yaml` de manera dinamica.
+
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
