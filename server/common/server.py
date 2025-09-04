@@ -19,12 +19,16 @@ class Server:
         self.winners = {}
         self.lock = threading.RLock()
         self.winners_condition = Condition(self.lock)
+        self.running = True
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
-        self._server_socket.close()
+        try:
+            self._server_socket.close()
+        except Exception:
+            pass
         logging.info("action: graceful_shutdown | result: success")
-        sys.exit(0)
+        self.running = False
 
     def run(self):
         """
@@ -39,12 +43,13 @@ class Server:
         # the server
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         try:
-            while True:
+            while self.running:
                 client_sock = self.__accept_new_connection()
-                threading.Thread(
-                    target=self.__handle_client_connection, args=(client_sock,)
-                ).start()
-                logging.debug(f"Threads: {threading.enumerate()}")
+                if client_sock:
+                    threading.Thread(
+                        target=self.__handle_client_connection, args=(client_sock,)
+                    ).start()
+                    logging.debug(f"Threads: {threading.enumerate()}")
         except KeyboardInterrupt:
             logging.info("action: graceful_shutdown | result: in_progress")
             self._server_socket.close()
@@ -128,9 +133,13 @@ class Server:
         """
 
         # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+        try:
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+        except OSError as e:
+            if not self.running:
+                return None
         return c
 
     def process_bets(self):
