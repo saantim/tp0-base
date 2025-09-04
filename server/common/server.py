@@ -71,6 +71,7 @@ class Server:
                     client_sock.sendall(response.to_bytes())
 
                 if msg.is_finish_batch_msg():
+                    logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
                     self.received_agencies += 1
                     if self.received_agencies == self._quantity_agencies:
                         logging.info("action: sorteo | result: success")
