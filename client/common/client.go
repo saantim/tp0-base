@@ -58,8 +58,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
+func (c *Client) StartClient() {
 	c.createClientSocket()
 	defer c.conn.Close()
 	handleSigterm(c)
@@ -74,9 +73,9 @@ func (c *Client) StartClientLoop() {
 
 	scanner := bufio.NewScanner(file)
 	var bets []model.Bet
-	error_sending := false
+	errorSending := false
 	for scanner.Scan() {
-		bet, _ := parse_csv_line(scanner, c.config)
+		bet, _ := parseCsvLine(scanner, c.config)
 		bets = append(bets, bet)
 
 		if len(bets) >= c.config.MaxBatchAmount {
@@ -89,7 +88,7 @@ func (c *Client) StartClientLoop() {
 			msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 			ack := messages.BuildAckMsg(msg)
 			if !ack.SuccessResult() || err != nil {
-				error_sending = true
+				errorSending = true
 			}
 		}
 
@@ -97,7 +96,7 @@ func (c *Client) StartClientLoop() {
 	}
 	if len(bets) > 0 {
 		if err := c.sendBatch(bets); err != nil {
-			error_sending = true
+			errorSending = true
 		}
 	}
 
@@ -105,14 +104,14 @@ func (c *Client) StartClientLoop() {
 
 	ack := messages.BuildAckMsg(msg)
 	if !ack.SuccessResult() || err != nil {
-		error_sending = true
+		errorSending = true
 	}
-	if error_sending {
+	if errorSending {
 		log.Errorf("action: sending_batch | result: fail | error")
 	}
 }
 
-func parse_csv_line(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
+func parseCsvLine(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
 	line := strings.TrimSpace(scanner.Text())
 	if line == "" {
 		return model.Bet{}, fmt.Errorf("EmptyLine")
@@ -122,7 +121,6 @@ func parse_csv_line(scanner *bufio.Scanner, config ClientConfig) (model.Bet, err
 		return model.Bet{}, fmt.Errorf("line with wrong format")
 	}
 
-	// Parsear ID
 	id, err := strconv.Atoi(strings.TrimSpace(fields[2]))
 	if err != nil {
 		return model.Bet{}, fmt.Errorf("line with wrong id")
