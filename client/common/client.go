@@ -127,15 +127,6 @@ func askWinners(c *Client) ([]string, error) {
 			log.Infof("error reading header: %v", err)
 			continue
 		}
-		if messages.IsAckHeader(header) {
-			log.Debugf("ACK recibido, esperando...")
-			if c.conn != nil {
-				c.conn.Close()
-				c.conn = nil
-			}
-			time.Sleep(c.config.LoopPeriod)
-			continue
-		}
 
 		payloadLen := messages.WinnerMsgPayloadLen(header)
 		data, err := readExactBytes(reader, payloadLen)
