@@ -81,7 +81,7 @@ class Server:
                     client_sock.sendall(response.to_bytes())
 
                 if msg.is_ask_winners_msg():
-                    logging.info(f"action: ask_winners | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}")
+                    logging.info(f"action: ask_winners | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}, Winners processed: {self.winners_processed}")
                     if self.winners_processed:
                         agency_id = msg.get_parser().get_agency_id()
                         winners = self.winners.get(agency_id)
