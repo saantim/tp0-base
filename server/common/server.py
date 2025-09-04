@@ -14,7 +14,6 @@ class Server:
         logging.info("action: graceful_shutdown | result: in_progress")
         self._server_socket.close()
         logging.info("action: graceful_shutdown | result: success")
-        sys.exit(0)
 
     def run(self):
         """
