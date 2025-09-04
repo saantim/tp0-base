@@ -73,8 +73,9 @@ class Server:
                 if msg.is_finish_batch_msg():
                     logging.info(f"action: finish_batch | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}")
                     self.received_agencies += 1
+                    logging.info(f"Agencias registradas {self.received_agencies}, Total esperado: {self._quantity_agencies}")
                     if self.received_agencies == self._quantity_agencies:
-                        process_bets()
+                        self.process_bets()
                         self.winners_processed = True
                     response = AckMsg(True)
                     client_sock.sendall(response.to_bytes())
