@@ -1,5 +1,29 @@
-# TP0: Docker + Comunicaciones + Concurrencia
+# TP 0: 
 
+## Documentación
+Documentación relacionada a la resolucion de los ejercicios propuestos.
+
+### Ejercicio N°1:
+
+#### Descripción:
+El script propuesto es `generar-compose.sh`.
+El mismo basicamente es un wrapper que llama a un script de Python (`generate-compose.py`) para generar un archivo de configuración de Docker Compose.
+
+#### Parámetros:
+1. `archivo_salida`: Nombre del archivo de configuración de salida (ej: docker-compose-dev.yaml)
+2. `cantidad_clientes`: Número de clientes a configurar (ej: 5)
+
+#### Ejemplo de uso:
+```
+./generar-compose.sh docker-compose-dev.yaml 5
+```
+
+### Ejercicio N°2:
+
+Haciendo uso de la configuración de volúmenes en Docker Compose se agregaron volumenes tanto en el servidor como el cliente para que puedan importar las configuraciones setedas en `config.ini` y `config.yaml` de manera dinamica.
+
+
+# TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
 
  El cliente (Golang) y el servidor (Python) fueron desarrollados en diferentes lenguajes simplemente para mostrar cómo dos lenguajes de programación pueden convivir en el mismo proyecto con la ayuda de containers, en este caso utilizando [Docker Compose](https://docs.docker.com/compose/).
