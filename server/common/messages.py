@@ -82,6 +82,7 @@ class BetParser(MessageParser):
         )
 
 class BetBatchParser(MessageParser):
+    """Parser for bet batch messages."""
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
         super().__init__(header, data)

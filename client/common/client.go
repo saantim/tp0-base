@@ -58,7 +58,8 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send bet messages to the client and handles the server's ack
+// StartClient reads bets from a CSV file and sends them to the server in batches.
+// It handles the server's ACK and manages the connection lifecycle.
 func (c *Client) StartClient() {
 	c.createClientSocket()
 	defer c.conn.Close()
@@ -112,6 +113,7 @@ func (c *Client) StartClient() {
 	}
 }
 
+// parseCsvLine parses a CSV line into a Bet struct
 func parseCsvLine(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
 	line := strings.TrimSpace(scanner.Text())
 	if line == "" {
@@ -207,6 +209,7 @@ func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
 	return buf, nil
 }
 
+// sendBatch sends a batch of bets to the server
 func (c *Client) sendBatch(bets []model.Bet) error {
 	betBatch := messages.BetBatchMsg{Bets: bets}
 	if err := writeAll(c.conn, betBatch.ToBytes()); err != nil {

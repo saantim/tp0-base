@@ -61,6 +61,16 @@ Los mensajes agregados son:
 
 Del lado del servidor se implementó una serie de Parsers para poder interpretar los mensajes.
 
+### Ejercicio N°6:
+Se implementó el procesamiento por lotes (batch processing) de apuestas. 
+Se agregan nuevos mensajes:
+
+- **BetBatchMsg (Cliente → Servidor)**:
+  - **Header**: Tipo de mensaje 
+  - **Payload**: Secuencia de apuestas en formato binario
+
+El Cliente arma lotes de apuestas desde archivos CSV y los envía al servidor.
+
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
