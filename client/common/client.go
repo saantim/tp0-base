@@ -93,6 +93,9 @@ func (c *Client) StartClientLoop() {
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+// handleSigterm handles SIGTERM signal for graceful shutdown.
+// Closes active connection and exits with status 0.
+// c: Client instance to close connection for
 func handleSigterm(c *Client) {
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGTERM)

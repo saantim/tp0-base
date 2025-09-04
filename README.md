@@ -39,6 +39,12 @@ action: test_echo_server | result: success
 action: test_echo_server | result: fail
 ```
 
+### Ejercicio N°4:
+
+Se implementó el manejo de señales SIGTERM para un cierre controlado (graceful shutdown) tanto en el cliente como en el servidor.
+En ambos casos se agregó manejo de señales SIGTERM. Al recibir SIGTERM, se cierran los recursos utilizados y se registra el proceso de cierre en los logs 
+
+
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
