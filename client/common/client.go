@@ -86,10 +86,10 @@ func (c *Client) StartClient() {
 			}
 			bets = []model.Bet{}
 
-			waitAck(c)
+			if waitAck(c) != nil {
+				return
+			}
 		}
-
-		time.Sleep(c.config.LoopPeriod)
 	}
 	if len(bets) > 0 {
 		if err := c.sendBatch(bets); err != nil {
@@ -106,12 +106,15 @@ func (c *Client) StartClient() {
 		log.Errorf("action: sending_batch | result: fail | error")
 	}
 
-	sendBatchFinished(c)
+	if sendBatchFinished(c) != nil {
+		return
+	}
 	winners, _ := askWinners(c)
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 }
 
 func askWinners(c *Client) ([]string, error) {
+	log.Infof("action: consulta_ganadores | result: in_progress ")
 	for {
 		if c.conn == nil {
 			c.createClientSocket()
@@ -142,7 +145,6 @@ func askWinners(c *Client) ([]string, error) {
 func sendBatchFinished(c *Client) error {
 	agencyId, _ := strconv.Atoi(c.config.ID)
 	msgToSend := messages.FinishBatchMsg{Agency: uint8(agencyId)}
-	//log.Debugf("Mensaje a mandar en FINISHED %v", msgToSend)
 	if err := writeAll(c.conn, msgToSend.ToBytes()); err != nil {
 		return fmt.Errorf("error sending finish msg: %v", err)
 	}
@@ -151,8 +153,11 @@ func sendBatchFinished(c *Client) error {
 
 func waitAck(c *Client) error {
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
+	if err != nil {
+		return err
+	}
 	ack := messages.BuildAckMsg(msg)
-	if !ack.SuccessResult() || err != nil {
+	if !ack.SuccessResult() {
 		return err
 	}
 	return nil

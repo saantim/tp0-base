@@ -20,6 +20,7 @@ class Server:
         self.lock = threading.RLock()
         self.winners_condition = Condition(self.lock)
         self.running = True
+        self.threads_running = threading.Event()
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
@@ -29,6 +30,7 @@ class Server:
             pass
         logging.info("action: graceful_shutdown | result: success")
         self.running = False
+        self.threads_running.set()
 
     def run(self):
         """
@@ -49,7 +51,6 @@ class Server:
                     threading.Thread(
                         target=self.__handle_client_connection, args=(client_sock,)
                     ).start()
-                    logging.debug(f"Threads: {threading.enumerate()}")
         except KeyboardInterrupt:
             logging.info("action: graceful_shutdown | result: in_progress")
             self._server_socket.close()
@@ -65,7 +66,7 @@ class Server:
         try:
             recv_bets = 0
             error_occurred = False
-            while self.running:
+            while not self.threads_running.is_set():
                 msg: MessageParser
                 msg, error = recv_msg(client_sock)
                 if error: error_occurred = True
@@ -118,9 +119,10 @@ class Server:
             self.received_agencies += 1
             if self.received_agencies == self._quantity_agencies:
                 logging.info("action: sorteo | result: success")
-                self.process_bets()
-                self.winners_processed = True
-                self.winners_condition.notify_all()
+                with self.winners_condition:
+                    self.process_bets()
+                    self.winners_processed = True
+                    self.winners_condition.notify_all()
         response = AckMsg(True)
         client_sock.sendall(response.to_bytes())
 
