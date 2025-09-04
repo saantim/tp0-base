@@ -12,6 +12,7 @@ SERVER = """
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - QUANTITY_AGENCIES={0}
     networks:
       - testing_net
     volumes:
@@ -72,7 +73,7 @@ def main():
     path, quantity = parse_args(args)
 
     with open(path, "w") as f:
-        script = HEADER + SERVER
+        script = HEADER + SERVER.format(quantity)
         for i in range(1, quantity + 1):
             script += CLIENT.format(i)
         script += NETWORK

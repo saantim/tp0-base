@@ -2,14 +2,19 @@ import socket
 import logging
 import signal
 import sys
-from .messages import MessageParser, AckMsg
+from .messages import MessageParser, AckMsg, WinnersMsg
 from . import utils
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, quantity_agencies):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self._quantity_agencies = quantity_agencies
+        self.received_agencies = 0
+        self.winners_processed = False
+        self.winners = {}
+
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
@@ -49,16 +54,43 @@ class Server:
             recv_bets = 0
             error_occurred = False
             while True:
-                bets, error = recv_bet(client_sock)
+                msg: MessageParser
+                msg, error = recv_msg(client_sock)
                 if error: error_occurred = True
-                if not bets:
+                if not msg:
                     break
 
-                recv_bets += len(bets)
-                utils.store_bets(bets)
+                if msg.is_bet_msg():
+                    bets_parser = msg.get_parser()
+                    bets = bets_parser.parse()
 
-                response = AckMsg(True)
-                client_sock.sendall(response.to_bytes())
+                    recv_bets += len(bets)
+                    utils.store_bets(bets)
+
+                    response = AckMsg(True)
+                    client_sock.sendall(response.to_bytes())
+
+                if msg.is_finish_batch_msg():
+                    logging.info(f"action: finish_batch | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}")
+                    self.received_agencies += 1
+                    if self.received_agencies == self._quantity_agencies:
+                        process_bets()
+                        self.winners_processed = True
+                    response = AckMsg(True)
+                    client_sock.sendall(response.to_bytes())
+
+                if msg.is_ask_winners_msg():
+                    logging.info(f"action: ask_winners | result: in_progress | agency_id: {msg.get_parser().get_agency_id()}")
+                    if self.winners_processed:
+                        agency_id = msg.get_parser().get_agency_id()
+                        winners = self.winners.get(agency_id)
+                        if not winners:
+                            winners = []
+                        winners_msg = WinnersMsg(winners)
+                        client_sock.sendall(winners_msg.to_bytes())
+                    else:
+                        response = AckMsg(True)
+                        client_sock.sendall(response.to_bytes())
 
             if error_occurred:
                 logging.info(f"action: apuesta_recibida | result: fail | cantidad: ${recv_bets}")
@@ -87,13 +119,19 @@ class Server:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
-def recv_bet(client_sock):
+    def process_bets(self):
+        for bet in utils.load_bets():
+            if utils.has_won(bet):
+                if not self.winners.get(bet.agency_id):
+                    self.winners[bet.agency_id] = []
+                self.winners[bet.agency_id].append(bet)
+
+def recv_msg(client_sock):
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
     if not header:
         return None, False
     to_read = MessageParser.expected_bytes(header)
-
     msg = client_sock.recv(to_read, socket.MSG_WAITALL)
     if len(msg) != to_read:
         return None, True
-    return MessageParser(header, msg).parse(), False
+    return MessageParser(header, msg), False

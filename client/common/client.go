@@ -75,6 +75,7 @@ func (c *Client) StartClient() {
 	var bets []model.Bet
 	errorSending := false
 	for scanner.Scan() {
+
 		bet, _ := parseCsvLine(scanner, c.config)
 		bets = append(bets, bet)
 
@@ -85,11 +86,7 @@ func (c *Client) StartClient() {
 			}
 			bets = []model.Bet{}
 
-			msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
-			ack := messages.BuildAckMsg(msg)
-			if !ack.SuccessResult() || err != nil {
-				errorSending = true
-			}
+			waitAck(c)
 		}
 
 		time.Sleep(c.config.LoopPeriod)
@@ -109,6 +106,66 @@ func (c *Client) StartClient() {
 	if errorSending {
 		log.Errorf("action: sending_batch | result: fail | error")
 	}
+
+	log.Infof("MANDANDO SEND BATCH FINISHED")
+	sendBatchFinished(c)
+	log.Infof("MANDANDO ASK WINNERS")
+	winners, _ := askWinners(c)
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
+}
+
+func askWinners(c *Client) ([]string, error) {
+	for {
+		if c.conn == nil {
+			c.createClientSocket()
+		}
+		agencyId, _ := strconv.Atoi(c.config.ID)
+		msgToSend := messages.AskWinnersMsg{Agency: uint8(agencyId)}
+		if err := writeAll(c.conn, msgToSend.ToBytes()); err != nil {
+			return nil, fmt.Errorf("error sending finish msg: %v", err)
+		}
+		reader := bufio.NewReader(c.conn)
+		header, _ := readExactBytes(reader, messages.HeaderLen)
+		if messages.IsAckHeader(header) {
+			log.Debugf("ACK recibido, esperando...")
+			if c.conn != nil {
+				c.conn.Close()
+				c.conn = nil
+			}
+			time.Sleep(c.config.LoopPeriod)
+			continue
+		}
+
+		payloadLen := messages.WinnerMsgPayloadLen(header)
+		data, err := readExactBytes(reader, payloadLen)
+		if err != nil {
+			log.Infof("Error Reading Winners: %v", err)
+		}
+		winnerMsg := messages.BuildWinnersMsg(append(header, data...))
+		log.Infof("action: winners | result: success | winner: %v", winnerMsg)
+		return winnerMsg.Winners, nil
+	}
+}
+
+func sendBatchFinished(c *Client) error {
+	agencyId, _ := strconv.Atoi(c.config.ID)
+	msgToSend := messages.FinishBatchMsg{Agency: uint8(agencyId)}
+	//log.Debugf("Mensaje a mandar en FINISHED %v", msgToSend)
+	if err := writeAll(c.conn, msgToSend.ToBytes()); err != nil {
+		return fmt.Errorf("error sending finish msg: %v", err)
+	}
+	return waitAck(c)
+}
+
+func waitAck(c *Client) error {
+	log.Infof("ESPErANDO ACK")
+	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
+	ack := messages.BuildAckMsg(msg)
+	if !ack.SuccessResult() || err != nil {
+		return err
+	}
+	log.Infof("ACK RECIBIDO!")
+	return nil
 }
 
 func parseCsvLine(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
