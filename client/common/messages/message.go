@@ -22,6 +22,7 @@ const (
 	WinnersMsgType     MsgType = 6
 )
 
+// BuildAckMsg creates an AckMsg from raw bytes.
 func BuildAckMsg(msg []byte) AckMsg {
 	result := msg[2] == 1
 	return AckMsg{result: result}
