@@ -8,7 +8,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - QUANTITY_AGENCIES=3
+      - QUANTITY_AGENCIES=5
     networks:
       - testing_net
     volumes:
@@ -59,6 +59,44 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
+      - NOMBRE=Pepito
+      - APELLIDO=Gomez
+      - DOCUMENTO=12345678
+      - NACIMIENTO=1990-01-01
+      - NUMERO=7574
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./.data:/data
+
+  client4:
+    container_name: client4
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=4
+      - NOMBRE=Pepito
+      - APELLIDO=Gomez
+      - DOCUMENTO=12345678
+      - NACIMIENTO=1990-01-01
+      - NUMERO=7574
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./.data:/data
+
+  client5:
+    container_name: client5
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=5
       - NOMBRE=Pepito
       - APELLIDO=Gomez
       - DOCUMENTO=12345678

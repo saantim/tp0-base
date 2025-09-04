@@ -126,15 +126,6 @@ func askWinners(c *Client) ([]string, error) {
 		}
 		reader := bufio.NewReader(c.conn)
 		header, err := readExactBytes(reader, messages.HeaderLen)
-		if err != nil {
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				log.Infof("Timeout al leer header, reintentando...")
-				c.conn = nil
-				continue
-			}
-			c.conn = nil
-			return nil, fmt.Errorf("error leyendo header: %v", err)
-		}
 		if messages.IsAckHeader(header) {
 			log.Debugf("ACK recibido, esperando...")
 			if c.conn != nil {
