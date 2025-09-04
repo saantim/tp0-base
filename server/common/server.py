@@ -123,9 +123,9 @@ class Server:
     def process_bets(self):
         for bet in utils.load_bets():
             if utils.has_won(bet):
-                if not self.winners.get(bet.agency_id):
-                    self.winners[bet.agency_id] = []
-                self.winners[bet.agency_id].append(bet)
+                if not self.winners.get(bet.agency):
+                    self.winners[bet.agency] = []
+                self.winners[bet.agency].append(bet.document)
 
 def recv_msg(client_sock):
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
