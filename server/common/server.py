@@ -10,7 +10,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self._quantity_agencies = quantity_agencies
+        self._quantity_agencies = int(quantity_agencies)
         self.received_agencies = 0
         self.winners_processed = False
         self.winners = {}
