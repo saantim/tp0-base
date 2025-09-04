@@ -1,10 +1,12 @@
 import sys
 
+# YAML template for the docker-compose file header
 HEADER = """
 name: tp0
 services:
 """
 
+# YAML template for the server service configuration
 SERVER = """
   server:
     container_name: server
@@ -19,6 +21,7 @@ SERVER = """
 
 """
 
+# YAML template for the network configuration
 NETWORK = """
 networks:
   testing_net:
@@ -28,6 +31,7 @@ networks:
         - subnet: 172.25.125.0/24
 """
 
+# YAML template for client services (uses string formatting for client ID)
 CLIENT = """
   client{0}:
     container_name: client{0}
@@ -49,8 +53,18 @@ CLIENT = """
 """
 
 def parse_args(args):
+    """
+    Parse and validate command line arguments.
+
+    Args:
+        args (list): Command line arguments [output_file, client_count]
+
+    Returns:
+        tuple: (output_file_path, number_of_clients)
+    """
     if len(args) != 2:
         print("Error: wrong quantity of arguments")
+        print("Usage: python generate-compose.py <output_file.yaml> <number_of_clients>")
         sys.exit(1)
 
     dest_path = args[0]
@@ -67,6 +81,14 @@ def parse_args(args):
     return dest_path, int(quantity)
 
 def main():
+    """
+    Main function that generates the docker-compose configuration file.
+    
+    The function:
+    1. Parses command line arguments
+    2. Generates the docker-compose YAML content
+    3. Writes the configuration to the specified output file
+    """
     args = sys.argv[1:]
     path, quantity = parse_args(args)
 
