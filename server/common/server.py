@@ -9,11 +9,16 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self.running = True
 
     def handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
-        self._server_socket.close()
+        try:
+            self._server_socket.close()
+        except Exception:
+            pass
         logging.info("action: graceful_shutdown | result: success")
+        self.running = False
 
     def run(self):
         """
@@ -28,7 +33,7 @@ class Server:
         # the server
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         try:
-            while True:
+            while self.running:
                 client_sock = self.__accept_new_connection()
                 self.__handle_client_connection(client_sock)
         except KeyboardInterrupt:
