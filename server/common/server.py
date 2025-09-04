@@ -61,36 +61,13 @@ class Server:
                     break
 
                 if msg.is_bet_msg():
-                    bets_parser = msg.get_parser()
-                    bets = bets_parser.parse()
-
-                    recv_bets += len(bets)
-                    utils.store_bets(bets)
-
-                    response = AckMsg(True)
-                    client_sock.sendall(response.to_bytes())
+                    recv_bets = self.handle_new_bets(client_sock, msg, recv_bets)
 
                 if msg.is_finish_batch_msg():
-                    logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
-                    self.received_agencies += 1
-                    if self.received_agencies == self._quantity_agencies:
-                        logging.info("action: sorteo | result: success")
-                        self.process_bets()
-                        self.winners_processed = True
-                    response = AckMsg(True)
-                    client_sock.sendall(response.to_bytes())
+                    self.handle_finished_batch(client_sock, recv_bets)
 
                 if msg.is_ask_winners_msg():
-                    if self.winners_processed:
-                        agency_id = msg.get_parser().get_agency_id()
-                        winners = self.winners.get(agency_id)
-                        if not winners:
-                            winners = []
-                        winners_msg = WinnersMsg(winners)
-                        client_sock.sendall(winners_msg.to_bytes())
-                    else:
-                        response = AckMsg(True)
-                        client_sock.sendall(response.to_bytes())
+                    self.handle_get_winners(client_sock, msg)
 
             if error_occurred:
                 return 1
@@ -102,6 +79,37 @@ class Server:
         finally:
             logging.info(f"Closing client socket {client_sock.getpeername()}")
             client_sock.close()
+
+    def handle_new_bets(self, client_sock, msg, recv_bets):
+        bets_parser = msg.get_parser()
+        bets = bets_parser.parse()
+        recv_bets += len(bets)
+        utils.store_bets(bets)
+        response = AckMsg(True)
+        client_sock.sendall(response.to_bytes())
+        return recv_bets
+
+    def handle_get_winners(self, client_sock, msg):
+        if self.winners_processed:
+            agency_id = msg.get_parser().get_agency_id()
+            winners = self.winners.get(agency_id)
+            if not winners:
+                winners = []
+            winners_msg = WinnersMsg(winners)
+            client_sock.sendall(winners_msg.to_bytes())
+        else:
+            response = AckMsg(True)
+            client_sock.sendall(response.to_bytes())
+
+    def handle_finished_batch(self, client_sock, recv_bets):
+        logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
+        self.received_agencies += 1
+        if self.received_agencies == self._quantity_agencies:
+            logging.info("action: sorteo | result: success")
+            self.process_bets()
+            self.winners_processed = True
+        response = AckMsg(True)
+        client_sock.sendall(response.to_bytes())
 
     def __accept_new_connection(self):
         """
