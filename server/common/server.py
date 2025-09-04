@@ -57,7 +57,7 @@ class Server:
         try:
             recv_bets = 0
             error_occurred = False
-            while True:
+            while self.running:
                 msg: MessageParser
                 msg, error = recv_msg(client_sock)
                 if error: error_occurred = True
