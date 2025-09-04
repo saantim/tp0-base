@@ -71,6 +71,25 @@ Se agregan nuevos mensajes:
 
 El Cliente arma lotes de apuestas desde archivos CSV y los envía al servidor.
 
+### Ejercicio N°7:
+Se agrega la solicitud de los ganadores por parte de los clientes.
+El cliente ahora avisa cuando termina de enviar un batch
+El servidor ahora puede definir quienes son los ganadores y enviarlos al cliente.
+
+Se agregan nuevos mensajes:
+
+- **AskWinnersMsg (Cliente → Servidor)**:
+  - **Header**: Tipo de mensaje 
+  - **Payload**: Agencia
+
+- **FinishBatchMsg (Cliente → Servidor)**:
+  - **Header**: Tipo de mensaje
+  - **Payload**: Agencia
+  - 
+- **WinnersMsg (Servidor → Cliente)**:
+  - **Header**: Tipo de mensaje 
+  - **Payload**: Secuencia de nombres de los ganadores
+  
 
 # TP0: Docker + Comunicaciones + Concurrencia
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

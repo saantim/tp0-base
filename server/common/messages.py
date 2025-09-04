@@ -130,6 +130,7 @@ class BetBatchParser(MessageParser):
         return bets
 
 class FinishBatchParser(MessageParser):
+    """Parser for finish batch messages."""
     PAYLOAD_SIZE = 1
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
@@ -144,6 +145,9 @@ class FinishBatchParser(MessageParser):
         return int(self.read_uint8())
 
 class AskWinnersParser(MessageParser):
+    """
+    Ask winners parser.
+    """
     PAYLOAD_SIZE = 1
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
@@ -170,6 +174,12 @@ class AckMsg:
         return bytes([MessageParser.ACK_MSG_TYPE, 0, int(self.success)])
 
 class WinnersMsg:
+    """
+    Winners message.
+
+    Attributes:
+        winners (list[str]): List of winners.
+    """
     def __init__(self, winners: list[str]):
         self.winners = winners
 

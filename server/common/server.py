@@ -85,6 +85,10 @@ class Server:
             client_sock.close()
 
     def handle_new_bets(self, client_sock, msg, recv_bets):
+        """
+        Handle new bets received from a client.
+
+        """
         bets_parser = msg.get_parser()
         bets = bets_parser.parse()
         recv_bets += len(bets)
@@ -94,6 +98,9 @@ class Server:
         return recv_bets
 
     def handle_get_winners(self, client_sock, msg):
+        """
+        Handle request for winners from a client.
+        """
         if self.winners_processed:
             agency_id = msg.get_parser().get_agency_id()
             winners = self.winners.get(agency_id)
@@ -106,6 +113,7 @@ class Server:
             client_sock.sendall(response.to_bytes())
 
     def handle_finished_batch(self, client_sock, recv_bets):
+        """ Handle finished batch of bets from a client. """
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
         self.received_agencies += 1
         if self.received_agencies == self._quantity_agencies:

@@ -60,6 +60,8 @@ func (c *Client) createClientSocket() error {
 
 // StartClient reads bets from a CSV file and sends them to the server in batches.
 // It handles the server's ACK and manages the connection lifecycle.
+// Client send a FinishBatchMsg to the server when it finishes sending a batch.
+// And then ask for winners.
 func (c *Client) StartClient() {
 	c.createClientSocket()
 	defer c.conn.Close()
@@ -113,6 +115,8 @@ func (c *Client) StartClient() {
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 }
 
+// askWinners sends an AskWinnersMsg to the server and waits for a response.
+// If the server doesn't send expected response, it retries.
 func askWinners(c *Client) ([]string, error) {
 	for {
 		if c.conn == nil {
@@ -150,6 +154,7 @@ func askWinners(c *Client) ([]string, error) {
 	}
 }
 
+// sendBatchFinished sends a FinishBatchMsg to the server and waits for an ACK.
 func sendBatchFinished(c *Client) error {
 	agencyId, _ := strconv.Atoi(c.config.ID)
 	msgToSend := messages.FinishBatchMsg{Agency: uint8(agencyId)}
@@ -160,6 +165,7 @@ func sendBatchFinished(c *Client) error {
 	return waitAck(c)
 }
 
+// waitAck waits for an ACK from the server.
 func waitAck(c *Client) error {
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 	ack := messages.BuildAckMsg(msg)

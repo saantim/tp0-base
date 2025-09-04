@@ -28,10 +28,12 @@ func BuildAckMsg(msg []byte) AckMsg {
 	return AckMsg{result: result}
 }
 
+// IsAckHeader checks if the header belongs to an AckMsg.
 func IsAckHeader(header []byte) bool {
 	return MsgType(header[0]) == AckMsgType
 }
 
+// IsWinnersHeader checks if the header belongs to a WinnersMsg.
 func IsWinnersHeader(header []byte) bool {
 	return MsgType(header[0]) == WinnersMsgType
 }
