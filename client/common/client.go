@@ -96,7 +96,7 @@ func (c *Client) StartClient() {
 			errorSending = true
 		}
 	}
-
+	log.Infof("Finished sending batch to %v", c.config.ID)
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 
 	ack := messages.BuildAckMsg(msg)
