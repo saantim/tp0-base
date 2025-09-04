@@ -47,10 +47,8 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Handle client connection: receive bets and send acknowledgments.
+        The client socket is always closed after processing, regardless of success or failure.
         """
         try:
             bet = recv_bet(client_sock)
@@ -90,6 +88,14 @@ class Server:
         return c
 
 def recv_bet(client_sock):
+    """Receive and parse a bet message from a client.
+    
+    Args:
+        client_sock: The client socket to receive data from.
+        
+    Returns:
+        Bet: The parsed bet message if successful, None otherwise.
+    """
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
     if not header:
         logging.error("action: receive_message | result: fail | error: no_header")

@@ -56,7 +56,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
+// StartClientLoop Send bet messages to the client and handles the server's ack
 func (c *Client) StartClientLoop() {
 	c.createClientSocket()
 	defer c.conn.Close()
@@ -82,6 +82,7 @@ func (c *Client) StartClientLoop() {
 	}
 }
 
+// buildBetFromEnvVars creates a Bet struct by reading values from environment variables.
 func buildBetFromEnvVars() model.Bet {
 	agency, _ := strconv.Atoi(os.Getenv("CLI_ID"))
 	name := os.Getenv("NOMBRE")
@@ -115,6 +116,7 @@ func handleSigterm(c *Client) {
 	}()
 }
 
+// writeAll writes the complete data to the connection to avoid short writes
 func writeAll(conn net.Conn, data []byte) error {
 	totalWritten := 0
 	for totalWritten < len(data) {
@@ -127,6 +129,7 @@ func writeAll(conn net.Conn, data []byte) error {
 	return nil
 }
 
+// readExactBytes reads exactly n bytes from the reader to avoid short reads
 func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
 	buf := make([]byte, n)
 	read := 0

@@ -1,6 +1,14 @@
+"""
+Message parsing and serialization module for the server.
+
+This module handles the binary protocol for client-server communication.
+"""
+
 from . import utils
 
 class MessageParser:
+    """Base class for parsing binary messages with a type header.
+    """
     BET_MSG_TYPE = 1
     ACK_MSG_TYPE = 2
     HEADER_SIZE = 1
@@ -37,6 +45,8 @@ class MessageParser:
         return 0
 
 class BetParser(MessageParser):
+    """Parser for bet messages.
+    """
     NAME_LENGTH = 32
     BIRTH_DAY_LENGTH = 10
     PAYLOAD_SIZE = 83
@@ -64,6 +74,11 @@ class BetParser(MessageParser):
 
 
 class AckMsg:
+    """ACK message.
+    
+    Attributes:
+        success (bool)
+    """
 
     def __init__(self, success: bool):
         self.success = success

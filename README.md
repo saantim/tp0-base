@@ -44,6 +44,22 @@ action: test_echo_server | result: fail
 Se implementó el manejo de señales SIGTERM para un cierre controlado (graceful shutdown) tanto en el cliente como en el servidor.
 En ambos casos se agregó manejo de señales SIGTERM. Al recibir SIGTERM, se cierran los recursos utilizados y se registra el proceso de cierre en los logs 
 
+### Ejercicio N°5:
+
+Se implementó un protocolo binario para la comunicación cliente-servidor. El cliente envía apuestas y el servidor responde con acuses de recibo. 
+Los mensajes correspondientes al protocolo son de longitud fija.
+
+Los mensajes agregados son:
+
+- **BetMsg (Cliente → Servidor)**:
+  - **Header**: Tipo de mensaje 
+  - **Payload**: Datos de la apuesta (agencia, nombre, apellido, documento, fecha de nacimiento, número de apuesta)
+  
+- **AckMsg (Servidor → Cliente)**:
+  - **Header**: Tipo de mensaje 
+  - **Payload**: Resultado 
+
+Del lado del servidor se implementó una serie de Parsers para poder interpretar los mensajes.
 
 
 # TP0: Docker + Comunicaciones + Concurrencia
