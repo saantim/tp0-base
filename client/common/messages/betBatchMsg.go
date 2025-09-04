@@ -8,10 +8,12 @@ type BetBatchMsg struct {
 	Bets []model.Bet
 }
 
+// GetType returns the message type identifier for BetBatchMsg.
 func (b *BetBatchMsg) GetType() MsgType {
 	return BetBatchMsgType
 }
 
+// ToBytes serializes the BetBatchMsg into a byte slice.
 func (b *BetBatchMsg) ToBytes() []byte {
 	payloadLen := model.TotalFixedLen * len(b.Bets)
 	buf := make([]byte, HeaderLen+payloadLen)

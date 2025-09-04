@@ -1,6 +1,14 @@
+"""
+Message parsing and serialization module for the server.
+
+This module handles the binary protocol for client-server communication.
+"""
+
 from . import utils
 import logging
 class MessageParser:
+    """Base class for parsing binary messages with a type header.
+    """
     BET_MSG_TYPE = 1
     ACK_MSG_TYPE = 2
     BET_BATCH_MSG_TYPE = 3
@@ -78,6 +86,8 @@ class MessageParser:
         return 0
 
 class BetParser(MessageParser):
+    """Parser for bet messages.
+    """
     NAME_LENGTH = 32
     BIRTH_DAY_LENGTH = 10
     PAYLOAD_SIZE = 83
@@ -104,6 +114,7 @@ class BetParser(MessageParser):
         )
 
 class BetBatchParser(MessageParser):
+    """Parser for bet batch messages."""
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
         super().__init__(header, data)
@@ -119,6 +130,7 @@ class BetBatchParser(MessageParser):
         return bets
 
 class FinishBatchParser(MessageParser):
+    """Parser for finish batch messages."""
     PAYLOAD_SIZE = 1
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
@@ -133,6 +145,9 @@ class FinishBatchParser(MessageParser):
         return int(self.read_uint8())
 
 class AskWinnersParser(MessageParser):
+    """
+    Ask winners parser.
+    """
     PAYLOAD_SIZE = 1
 
     def __init__(self, header: bytes, data: bytes, offset: int = 0):
@@ -146,6 +161,11 @@ class AskWinnersParser(MessageParser):
         return int(self.read_uint8())
 
 class AckMsg:
+    """ACK message.
+    
+    Attributes:
+        success (bool)
+    """
 
     def __init__(self, success: bool):
         self.success = success
@@ -154,6 +174,12 @@ class AckMsg:
         return bytes([MessageParser.ACK_MSG_TYPE, 0, int(self.success)])
 
 class WinnersMsg:
+    """
+    Winners message.
+
+    Attributes:
+        winners (list[str]): List of winners.
+    """
     def __init__(self, winners: list[str]):
         self.winners = winners
 

@@ -8,10 +8,12 @@ type BetMsg struct {
 
 const BetMsgPayloadLen = model.TotalFixedLen
 
+// GetType returns the message type identifier for BetMsg.
 func (b *BetMsg) GetType() MsgType {
 	return BetMsgType
 }
 
+// ToBytes serializes the BetMsg into a byte slice.
 func (b *BetMsg) ToBytes() []byte {
 	betBytes := b.Bet.ToBytes()
 	buf := make([]byte, HeaderLen+BetMsgPayloadLen)

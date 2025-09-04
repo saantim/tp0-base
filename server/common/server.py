@@ -23,6 +23,9 @@ class Server:
         self.threads_running = threading.Event()
 
     def handle_sigterm(self, signum, frame):
+        """Handle SIGTERM signal for graceful shutdown.
+            modify the running flag to False
+        """
         logging.info("action: graceful_shutdown | result: in_progress")
         try:
             self._server_socket.close()
@@ -34,11 +37,10 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
+        Main server loop that accepts and handles client connections.
 
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        Listens for new connections and processes each client in sequence.
+        Handles SIGTERM and KeyboardInterrupt for graceful shutdown.
         """
 
         # TODO: Modify this program to handle signal to graceful shutdown
@@ -58,10 +60,8 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Handle client connection: receive bets and send acknowledgments.
+        The client socket is always closed after processing, regardless of success or failure.
         """
         try:
             recv_bets = 0
@@ -94,6 +94,10 @@ class Server:
             client_sock.close()
 
     def handle_new_bets(self, client_sock, msg, recv_bets):
+        """
+        Handle new bets received from a client.
+
+        """
         bets_parser = msg.get_parser()
         bets = bets_parser.parse()
         recv_bets += len(bets)
@@ -103,17 +107,20 @@ class Server:
         client_sock.sendall(response.to_bytes())
         return recv_bets
 
-    def handle_get_winners(self, client_sock, msg):
+    def handle_get_winners(self, client_sock, msg):        
+        """
+        Handle request for winners from a client.
+        """
         with self.lock:
             while not self.winners_processed:
                 self.winners_condition.wait()
-                
             agency_id = msg.get_parser().get_agency_id()
             winners = self.winners.get(agency_id, [])
             winners_msg = WinnersMsg(winners)
             client_sock.sendall(winners_msg.to_bytes())
 
     def handle_finished_batch(self, client_sock, recv_bets):
+        """ Handle finished batch of bets from a client. """
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {recv_bets}")
         with self.lock:
             self.received_agencies += 1
@@ -132,6 +139,8 @@ class Server:
 
         Function blocks until a connection to a client is made.
         Then connection created is printed and returned
+
+        If the server is not running, returns None
         """
 
         # Connection arrived
@@ -152,6 +161,14 @@ class Server:
                 self.winners[bet.agency].append(bet.document)
 
 def recv_msg(client_sock):
+    """Receive a message from a client.
+    
+    Args:
+        client_sock: The client socket to receive data from.
+        
+    Returns:
+        Bet: returns the message parser.
+    """
     header = client_sock.recv(MessageParser.HEADER_SIZE, socket.MSG_WAITALL)
     if not header:
         return None, False

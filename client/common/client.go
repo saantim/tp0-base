@@ -58,6 +58,10 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+// StartClient reads bets from a CSV file and sends them to the server in batches.
+// It handles the server's ACK and manages the connection lifecycle.
+// Client send a FinishBatchMsg to the server when it finishes sending a batch.
+// And then ask for winners.
 func (c *Client) StartClient() {
 	c.createClientSocket()
 	defer c.conn.Close()
@@ -113,6 +117,8 @@ func (c *Client) StartClient() {
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 }
 
+// askWinners sends an AskWinnersMsg to the server and waits for a response.
+// If the server doesn't send expected response, it retries.
 func askWinners(c *Client) ([]string, error) {
 	log.Infof("action: consulta_ganadores | result: in_progress ")
 	for {
@@ -142,6 +148,7 @@ func askWinners(c *Client) ([]string, error) {
 	}
 }
 
+// sendBatchFinished sends a FinishBatchMsg to the server and waits for an ACK.
 func sendBatchFinished(c *Client) error {
 	agencyId, _ := strconv.Atoi(c.config.ID)
 	msgToSend := messages.FinishBatchMsg{Agency: uint8(agencyId)}
@@ -151,6 +158,7 @@ func sendBatchFinished(c *Client) error {
 	return waitAck(c)
 }
 
+// waitAck waits for an ACK from the server.
 func waitAck(c *Client) error {
 	msg, err := readExactBytes(bufio.NewReader(c.conn), messages.AckMsgLen)
 	if err != nil {
@@ -163,6 +171,7 @@ func waitAck(c *Client) error {
 	return nil
 }
 
+// parseCsvLine parses a CSV line into a Bet struct
 func parseCsvLine(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error) {
 	line := strings.TrimSpace(scanner.Text())
 	if line == "" {
@@ -194,6 +203,7 @@ func parseCsvLine(scanner *bufio.Scanner, config ClientConfig) (model.Bet, error
 	}, nil
 }
 
+// buildBetFromEnvVars creates a Bet struct by reading values from environment variables.
 func buildBetFromEnvVars() model.Bet {
 	agency, _ := strconv.Atoi(os.Getenv("CLI_ID"))
 	name := os.Getenv("NOMBRE")
@@ -211,6 +221,9 @@ func buildBetFromEnvVars() model.Bet {
 	}
 }
 
+// handleSigterm handles SIGTERM signal for graceful shutdown.
+// Closes active connection and exits with status 0.
+// c: Client instance to close connection for
 func handleSigterm(c *Client) {
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGTERM)
@@ -224,6 +237,7 @@ func handleSigterm(c *Client) {
 	}()
 }
 
+// writeAll writes the complete data to the connection to avoid short writes
 func writeAll(conn net.Conn, data []byte) error {
 	totalWritten := 0
 	for totalWritten < len(data) {
@@ -237,6 +251,7 @@ func writeAll(conn net.Conn, data []byte) error {
 	return nil
 }
 
+// readExactBytes reads exactly n bytes from the reader to avoid short reads
 func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
 	buf := make([]byte, n)
 	read := 0
@@ -252,6 +267,7 @@ func readExactBytes(reader *bufio.Reader, n int) ([]byte, error) {
 	return buf, nil
 }
 
+// sendBatch sends a batch of bets to the server
 func (c *Client) sendBatch(bets []model.Bet) error {
 	betBatch := messages.BetBatchMsg{Bets: bets}
 	if err := writeAll(c.conn, betBatch.ToBytes()); err != nil {

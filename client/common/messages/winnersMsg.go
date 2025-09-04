@@ -18,11 +18,13 @@ func (a *WinnersMsg) GetType() MsgType {
 	return WinnersMsgType
 }
 
+// WinnerMsgPayloadLen returns the payload length for a WinnersMsg based on the header.
 func WinnerMsgPayloadLen(header []byte) int {
 	winnersQuantity := header[1]
 	return int(winnersQuantity) * idLen
 }
 
+// BuildWinnersMsg creates a WinnersMsg from raw bytes.
 func BuildWinnersMsg(msg []byte) *WinnersMsg {
 	if len(msg) < HeaderLen {
 		return &WinnersMsg{Winners: []string{}}

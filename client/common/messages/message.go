@@ -22,15 +22,18 @@ const (
 	WinnersMsgType     MsgType = 6
 )
 
+// BuildAckMsg creates an AckMsg from raw bytes.
 func BuildAckMsg(msg []byte) AckMsg {
 	result := msg[2] == 1
 	return AckMsg{result: result}
 }
 
+// IsAckHeader checks if the header belongs to an AckMsg.
 func IsAckHeader(header []byte) bool {
 	return MsgType(header[0]) == AckMsgType
 }
 
+// IsWinnersHeader checks if the header belongs to a WinnersMsg.
 func IsWinnersHeader(header []byte) bool {
 	return MsgType(header[0]) == WinnersMsgType
 }
