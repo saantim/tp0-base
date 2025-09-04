@@ -53,7 +53,7 @@ class Server:
         try:
             recv_bets = 0
             error_occurred = False
-            while True:
+            while self.running:
                 bets, error = recv_bet(client_sock)
                 if error: error_occurred = True
                 if not bets:
