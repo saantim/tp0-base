@@ -2,6 +2,8 @@ import socket
 import logging
 import signal
 import sys
+import time
+
 from .messages import MessageParser, AckMsg, WinnersMsg
 import threading
 from threading import Condition
@@ -18,9 +20,12 @@ class Server:
         self.winners_processed = False
         self.winners = {}
         self.lock = threading.RLock()
+        self.threads_lock = threading.Lock()
         self.winners_condition = Condition(self.lock)
         self.running = True
         self.threads_running = threading.Event()
+        self.threads = []
+        self.cleaner = None
 
     def handle_sigterm(self, signum, frame):
         """Handle SIGTERM signal for graceful shutdown.
@@ -38,6 +43,8 @@ class Server:
         logging.info("action: graceful_shutdown | result: success")
         self.running = False
         self.threads_running.set()
+        if self.cleaner: self.cleaner.join()
+        self._cleanup_threads()
 
     def run(self):
         """Run the main server loop.
@@ -52,17 +59,43 @@ class Server:
         # TODO: Modify this program to handle signal to graceful shutdown
         # the server
         signal.signal(signal.SIGTERM, self.handle_sigterm)
+        self.cleaner = threading.Thread(target=self._deamon_clenup, daemon=True)
+        self.cleaner.start()
         try:
             while self.running:
                 client_sock = self.__accept_new_connection()
                 if client_sock:
-                    threading.Thread(
-                        target=self.__handle_client_connection, args=(client_sock,)
-                    ).start()
+                    with self.threads_lock:
+                        client_thread = threading.Thread(
+                            target=self.__handle_client_connection, 
+                            args=(client_sock,),
+                        )
+                        self.threads.append(client_thread)
+                    client_thread.start()
         except KeyboardInterrupt:
             logging.info("action: graceful_shutdown | result: in_progress")
             self._server_socket.close()
+            if self.cleaner: self.cleaner.join()
             logging.info("action: graceful_shutdown | result: success")
+
+    def _deamon_clenup(self):
+        while not self.threads_running.wait(timeout=5):
+            self._cleanup_threads()
+
+    def _cleanup_threads(self):
+        """
+        Check the list of threads and remove those that have already finished execution.
+        """
+        with self.threads_lock:
+            threads_to_clean = [t for t in self.threads if not t.is_alive()]
+            
+        for thread in threads_to_clean:
+            thread.join()
+            
+        if threads_to_clean:
+            with self.threads_lock:
+                self.threads = [t for t in self.threads if t.is_alive()]
+                logging.debug(f"Cleaned up {len(threads_to_clean)} finished threads")
 
     def __handle_client_connection(self, client_sock):
         """Handle client connection and process incoming messages.
