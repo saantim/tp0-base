@@ -59,7 +59,7 @@ class Server:
         # TODO: Modify this program to handle signal to graceful shutdown
         # the server
         signal.signal(signal.SIGTERM, self.handle_sigterm)
-        self.cleaner = threading.Thread(target=self._deamon_clenup, daemon=True)
+        self.cleaner = threading.Thread(target=self._daemon_cleanup, daemon=True)
         self.cleaner.start()
         try:
             while self.running:
@@ -78,7 +78,7 @@ class Server:
             if self.cleaner: self.cleaner.join()
             logging.info("action: graceful_shutdown | result: success")
 
-    def _deamon_clenup(self):
+    def _daemon_cleanup(self):
         while not self.threads_running.wait(timeout=5):
             self._cleanup_threads()
 
