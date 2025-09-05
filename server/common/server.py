@@ -86,6 +86,7 @@ class Server:
         """
         Check the list of threads and remove those that have already finished execution.
         """
+        logging.info("action: cleanup | result: in_progress")
         with self.threads_lock:
             threads_to_clean = [t for t in self.threads if not t.is_alive()]
             
